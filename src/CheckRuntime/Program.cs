@@ -21,6 +21,16 @@ class Program
             await DownloadAndInstallDotNet(dotnetVersion);
         }
 
+        if (IsWebView2Installed())
+        {
+            Console.WriteLine("WebView2 已安装！");
+        }
+        else
+        {
+            Console.WriteLine("WebView2 未安装，正在下载并安装...");
+            await DownloadAndInstallWebView2();
+        }
+
         Console.ReadLine();
     }
 
@@ -56,7 +66,7 @@ class Program
         {
             webClient.DownloadProgressChanged += (sender, e) =>
             {
-                Console.Write($"\r下载进度：{e.ProgressPercentage}%");
+                Console.Write($"\r.NET 下载进度：{e.ProgressPercentage}%");
             };
 
             await webClient.DownloadFileTaskAsync(new Uri(dotnetInstallerUrl), installerFileName);
@@ -73,21 +83,60 @@ class Program
         Console.WriteLine($"开始安装.NET {version}，请稍候...");
         Process installerProcess = Process.Start(startInfo);
         installerProcess.WaitForExit();
-
         File.Delete(installerFileName);
-
-        if (IsDotNetInstalled(version))
-        {
-            Console.WriteLine($".NET {version} 安装完成！");
-        }
-        else
-        {
-            Console.WriteLine($".NET {version} 安装失败，请手动安装。");
-        }
+        Console.WriteLine("安装完成");
     }
 
     static string GetDotNetRegistryPath(string version, string osArchitecture)
     {
         return $"SOFTWARE\\dotnet\\Setup\\InstalledVersions\\{version}";
+    }
+
+    static bool IsWebView2Installed()
+    {
+        const string webView2RegistryPath = @"SOFTWARE\Microsoft\EdgeUpdate\Clients\{A8A19650-6F6D-4CBF-A64F-8C3196A5151D}";
+
+        using (RegistryKey registryKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(webView2RegistryPath))
+        {
+            return registryKey != null;
+        }
+    }
+
+    static async Task DownloadAndInstallWebView2()
+    {
+        string osArchitecture = Environment.Is64BitOperatingSystem ? "x64" : "x86";
+        if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") == "ARM64")
+        {
+            osArchitecture = "Arm64";
+        }
+
+        string webView2InstallerUrl = $"https://go.microsoft.com/fwlink/p/?LinkId=2124703&os={Environment.OSVersion.Platform.ToString().ToLower()}&arch={osArchitecture}";
+
+        string installerFileName = "WebView2RuntimeInstaller.exe";
+
+        using (WebClient webClient = new WebClient())
+        {
+            webClient.DownloadProgressChanged += (sender, e) =>
+            {
+                Console.Write($"\rWebView2 下载进度：{e.ProgressPercentage}%");
+            };
+
+            await webClient.DownloadFileTaskAsync(new Uri(webView2InstallerUrl), installerFileName);
+            Console.WriteLine(); // 换行，使输出更整洁
+        }
+
+        ProcessStartInfo startInfo = new ProcessStartInfo
+        {
+            FileName = installerFileName,
+            UseShellExecute = true,
+            Verb = "runas" // Run as administrator
+        };
+
+        Console.WriteLine("开始安装 WebView2，请稍候...");
+        Process installerProcess = Process.Start(startInfo);
+        installerProcess.WaitForExit();
+
+        File.Delete(installerFileName);
+        Console.WriteLine("安装完成");
     }
 }
