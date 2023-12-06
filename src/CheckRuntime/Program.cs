@@ -10,24 +10,24 @@ class Program
     static async Task Main()
     {
         string dotnetVersion = "6.0.25"; // 你想要安装的.NET版本
-
+        //TODO：这里注册表判断不准确，抽空再看
         if (IsDotNetInstalled(dotnetVersion))
         {
             Console.WriteLine($".NET {dotnetVersion} 已安装！");
         }
         else
         {
-            Console.WriteLine($".NET {dotnetVersion} 未安装，正在下载并安装...");
+            Console.WriteLine($"正在下载并安装...");
             await DownloadAndInstallDotNet(dotnetVersion);
         }
-
+        //TODO：这里注册表判断不准确，抽空再看
         if (IsWebView2Installed())
         {
             Console.WriteLine("WebView2 已安装！");
         }
         else
         {
-            Console.WriteLine("WebView2 未安装，正在下载并安装...");
+            Console.WriteLine("正在下载并安装...");
             await DownloadAndInstallWebView2();
         }
 
